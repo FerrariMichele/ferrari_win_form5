@@ -167,33 +167,11 @@ namespace ferrari_win_form3
         }
         public void Modifica(int posizione, string nome, float prezzo, string filePath)
         {
-            using (StreamReader sr = File.OpenText(filePath))
-            {
-                string s;
-                using (StreamWriter sw = new StreamWriter("tlist.csv", append: true))
-                {
-                    int riga = 0;
-                    while ((s = sr.ReadLine()) != null)
-                    {
-                        string[] dati = s.Split(';');
-                        if (dati[3] == "0")
-                        {
-                            riga++;
-                            if (riga != posizione)
-                            {
-                                sw.WriteLine(s);
-                            }
-                            else
-                            {
-                                sw.WriteLine($"{nome};{prezzo.ToString("0.00")};{dati[2]}");
-                            }
-                        }
-                    }
-                }
-            }
-            File.Delete(filePath);
-            File.Move("tlist.csv", filePath);
-            File.Delete("tlist.csv");
+            var oStream = new FileStream(filePath, FileMode.Append, FileAccess.Write, FileShare.Read);
+            StreamWriter sw = new StreamWriter(oStream);
+            oStream.Seek(posizione, SeekOrigin.Current);
+            sw.WriteLine($"{nome};{prezzo.ToString("0.00")};1;0");
+            sw.Close();
         }
         public void Cancellazione(string nome, string filePath)
         {

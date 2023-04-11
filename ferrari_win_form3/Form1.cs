@@ -1,4 +1,4 @@
-﻿  using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -15,28 +15,37 @@ namespace ferrari_win_form3
     {
         #region dichiarazioni
         readonly string path;
+        readonly int recordLenght;
+        public struct product
+        {
+            public string name;
+            public float price;
+            public int number;
+            public int cancelled;
+        }
         #endregion
         #region funzioni evento
         public Form1()
         {
             InitializeComponent();
-            path = @"dati.csv";
+            path = @"dati.txt";
             if (!File.Exists(path)) 
             { 
                 File.Create(path);
             }
             Visualizza(path);
+            recordLenght = 64;
         }
         private void buttonAdd_Click(object sender, EventArgs e)
         {
-            int pos = Ricerca(textBoxNome.Text, path);
-            if (pos == -1)
+            string ser = Ricerca(textBoxNome.Text, path);
+            if (ser == "")
             {
                 Aggiunta(textBoxNome.Text, float.Parse(textBoxPrezzo.Text), path);
             }
             else
             {
-                AumentaNumero(textBoxNome.Text, path);
+                AumentaNumero(ser, path, recordLenght);
             }
             listView1.Clear();
             Visualizza(path);
@@ -44,27 +53,27 @@ namespace ferrari_win_form3
         }
         private void buttonFind_Click(object sender, EventArgs e)
         {
-            int pos = Ricerca(textBoxNome.Text, path);
-            if (pos == -1)
+            string ser = Ricerca(textBoxNome.Text, path);
+            if (ser == "")
             {
                 MessageBox.Show("Elemento non presente!");
             }
             else
             {
-                MessageBox.Show($"Elemento {textBoxNome.Text} trovato in posizione {pos}");
+                MessageBox.Show($"Elemento trovato");
             }
             PulisciTextBox();
         }
         private void buttonMod_Click(object sender, EventArgs e)
         {
-            int pos = Ricerca(textBoxNome.Text, path);
-            if (pos == -1)
+            string ser = Ricerca(textBoxNome.Text, path);
+            if (ser == "")
             {
                 MessageBox.Show("Elemento non presente!");
             }
             else
             {
-                Modifica(pos, textBoxNewName.Text, float.Parse(textBoxNewPrice.Text), path);
+                //Modifica(pos, textBoxNewName.Text, float.Parse(textBoxNewPrice.Text), path);
             }
             listView1.Clear();
             Visualizza(path);
@@ -72,14 +81,14 @@ namespace ferrari_win_form3
         }
         private void buttonDel_Click(object sender, EventArgs e)
         {
-            int pos = Ricerca(textBoxNome.Text, path);
-            if (pos == -1)
+            string ser = Ricerca(textBoxNome.Text, path);
+            if (ser == "")
             {
                 MessageBox.Show("Elemento non presente!");
             }
             else
             {
-                Cancellazione(textBoxNome.Text, path);
+                Cancellazione(ser, path, recordLenght);
             }
             listView1.Clear();
             Visualizza(path);
@@ -96,14 +105,14 @@ namespace ferrari_win_form3
         }
         private void buttonRec_Click(object sender, EventArgs e)
         {
-            int pos = RicercaR(textBoxNome.Text, path);
-            if (pos == -1)
+            string ser = RicercaR(textBoxNome.Text, path);
+            if (ser == "")
             {
                 MessageBox.Show("Elemento non presente!");
             }
             else
             {
-                Recupero(textBoxNome.Text, path);
+                Recupero(ser, path, recordLenght);
             }
             listView1.Clear();
             Visualizza(path);
@@ -119,111 +128,119 @@ namespace ferrari_win_form3
         {
             var oStream = new FileStream(filePath, FileMode.Append, FileAccess.Write, FileShare.Read);
             StreamWriter sw = new StreamWriter(oStream);
-            sw.WriteLine($"{nome};{prezzo.ToString("0.00")};1;0");
+            sw.WriteLine($"{nome};{prezzo.ToString("0.00")};1;0;".PadRight(recordLenght - 4) + "##");
             sw.Close();
         }
-        public int Ricerca(string nome, string filePath)
+        public string Ricerca(string nome, string filePath)
         {
-            int posizione = -1;
             using (StreamReader sr = File.OpenText(filePath))
             {
                 string s;
-                int riga = 0;
                 while ((s = sr.ReadLine()) != null)
                 {
                     string[] dati = s.Split(';');
-                    if(dati[3] == "0")
+                    if(dati[3] == "0" && dati[0] == nome)
                     {
-                        riga++;
-                        if (dati[0] == nome)
-                        {
-                            posizione = riga;
-                            break;
-                        }
+                        sr.Close();
+                        return s;
                     }
                 }
+                sr.Close();
             }
-            return posizione;
+            return "";
         }
-        public int RicercaR(string nome, string filePath)
+        public string RicercaR(string nome, string filePath)
         {
-            int posizione = -1;
             using (StreamReader sr = File.OpenText(filePath))
             {
                 string s;
-                int riga = 0;
                 while ((s = sr.ReadLine()) != null)
                 {
                     string[] dati = s.Split(';');
-                    riga++;
                     if (dati[0] == nome)
                     {
-                        posizione = riga;
-                        break;
+                        sr.Close();
+                        return s;
                     }
                 }
+                sr.Close();
             }
-            return posizione;
+            return "";
         }
-        public void Modifica(int posizione, string nome, float prezzo, string filePath)
+        public void Modifica(string ricerca, string nome, float prezzo, string filePath, int recordLenght)
         {
-            var oStream = new FileStream(filePath, FileMode.Append, FileAccess.Write, FileShare.Read);
-            StreamWriter sw = new StreamWriter(oStream);
-            oStream.Seek(posizione, SeekOrigin.Current);
-            sw.WriteLine($"{nome};{prezzo.ToString("0.00")};1;0");
-            sw.Close();
-        }
-        public void Cancellazione(string nome, string filePath)
-        {
-            using (StreamReader sr = File.OpenText(filePath))
+            product prod, ser;
+            ser = ProductSplitter(ricerca);
+            string line;
+            var file = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite);
+            BinaryReader reader = new BinaryReader(file);
+            BinaryWriter writer = new BinaryWriter(file);
+            file.Seek(0, SeekOrigin.Begin);
+            while (file.Position < file.Length)
             {
-                string s;
-                using (StreamWriter sw = new StreamWriter("tlist.csv", append: true))
+                byte[] br = reader.ReadBytes(recordLenght);
+                line = Encoding.ASCII.GetString(br, 0, br.Length);
+                prod = ProductSplitter(line);
+                if (prod.name == ser.name)
                 {
-                    while ((s = sr.ReadLine()) != null)
-                    {
-                        string[] dati = s.Split(';');
-                        if (nome != dati[0])
-                        {
-                            sw.WriteLine(s);
-                        }
-                        else
-                        {
-                            sw.WriteLine($"{dati[0]};{dati[1]};{dati[2]};1");
-                        }
-                    }
+                    line = $"{nome};{prezzo};{prod.number};0;".PadRight(recordLenght - 4) + "##";
+                    file.Seek(-recordLenght, SeekOrigin.Current);
+                    writer.Write(line);
                 }
             }
-            File.Delete(filePath);
-            File.Move("tlist.csv", filePath);
-            File.Delete("tlist.csv");
+            reader.Close();
+            writer.Close();
+            file.Close();
         }
-        public void AumentaNumero(string nome, string filePath)
+        public void Cancellazione(string ricerca, string filePath, int recordLenght)
         {
-            using (StreamReader sr = File.OpenText(filePath))
+            product prod, ser;
+            ser = ProductSplitter(ricerca);
+            string line;
+            var file = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite);
+            BinaryReader reader = new BinaryReader(file);
+            BinaryWriter writer = new BinaryWriter(file);
+            file.Seek(0, SeekOrigin.Begin);
+            while (file.Position < file.Length)
             {
-                string s;
-                using (StreamWriter sw = new StreamWriter("tlist.csv", append: true))
+                byte[] br = reader.ReadBytes(recordLenght);
+                line = Encoding.ASCII.GetString(br, 0, br.Length);
+                prod = ProductSplitter(line);
+                if (prod.name == ser.name)
                 {
-                    while ((s = sr.ReadLine()) != null)
-                    {
-                        string[] dati = s.Split(';');
-                        if (nome != dati[0])
-                        {
-                            sw.WriteLine(s);
-                        }
-                        else
-                        {
-                            int numero = int.Parse(dati[2]);
-                            numero++;
-                            sw.WriteLine($"{dati[0]};{dati[1]};{numero};0");
-                        }
-                    }
+                    line = $"{prod.name};{prod.price};{prod.number};1;".PadRight(recordLenght - 4) + "##";
+                    file.Seek(-recordLenght, SeekOrigin.Current);
+                    writer.Write(line);
                 }
             }
-            File.Delete(filePath);
-            File.Move("tlist.csv", filePath);
-            File.Delete("tlist.csv");
+            reader.Close();
+            writer.Close();
+            file.Close();
+        }
+        public void AumentaNumero(string ricerca, string filePath, int recordLenght)
+        {
+            product prod, ser;
+            ser = ProductSplitter(ricerca);
+            string line;
+            var file = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite);
+            BinaryReader reader = new BinaryReader(file);
+            BinaryWriter writer = new BinaryWriter(file);
+            file.Seek(0, SeekOrigin.Begin);
+            while (file.Position < file.Length)
+            {
+                byte[] br = reader.ReadBytes(recordLenght);
+                line = Encoding.ASCII.GetString(br, 0, br.Length);
+                prod = ProductSplitter(line);
+                if (prod.name == ser.name)
+                {
+                    line = $"{prod.name};{prod.price};{prod.number + 1};0;".PadRight(recordLenght - 4) + "##";
+                    file.Seek(-recordLenght, SeekOrigin.Current);
+                    writer.Write(line);
+                }
+            }
+            reader.Close();
+            writer.Close();
+            file.Close();
         }
         public void Visualizza(string filePath) 
         {
@@ -240,7 +257,6 @@ namespace ferrari_win_form3
                     string[] dati = s.Split(';');
                     if (dati[3] == "0")
                     {
-                        //listView1.Items.Add($"Nome: {dati[0]}; Prezzo: {dati[1]}; Quantità: {dati[2]};");
                         ListViewItem newItem = new ListViewItem();
                         newItem.Text = dati[0];
                         newItem.SubItems.Add(dati[1]);
@@ -248,6 +264,7 @@ namespace ferrari_win_form3
                         listView1.Items.Add(newItem);
                     }
                 }
+                sr.Close();
             }
         }
         public void PulisciTextBox()
@@ -272,36 +289,48 @@ namespace ferrari_win_form3
                                 sw.WriteLine(s);
                         }
                     }
+                    sw.Close();
                 }
+                sr.Close();
             }
             File.Delete(filePath);
             File.Move("tlist.csv", filePath);
             File.Delete("tlist.csv");
         }
-        public void Recupero(string nome, string filePath)
+        public void Recupero(string ricerca, string filePath, int recordLenght)
         {
-            using (StreamReader sr = File.OpenText(filePath))
+            product prod, ser;
+            ser = ProductSplitter(ricerca);
+            string line;
+            var file = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite);
+            BinaryReader reader = new BinaryReader(file);
+            BinaryWriter writer = new BinaryWriter(file);
+            file.Seek(0, SeekOrigin.Begin);
+            while (file.Position < file.Length)
             {
-                string s;
-                using (StreamWriter sw = new StreamWriter("tlist.csv", append: true))
+                byte[] br = reader.ReadBytes(recordLenght);
+                line = Encoding.ASCII.GetString(br, 0, br.Length);
+                prod = ProductSplitter(line);
+                if (prod.name == ser.name)
                 {
-                    while ((s = sr.ReadLine()) != null)
-                    {
-                        string[] dati = s.Split(';');
-                        if (nome != dati[0])
-                        {
-                            sw.WriteLine(s);
-                        }
-                        else
-                        {
-                            sw.WriteLine($"{dati[0]};{dati[1]};{dati[2]};0");
-                        }
-                    }
+                    line = $"{prod.name};{prod.price};{prod.number};0;".PadRight(recordLenght - 4) + "##";
+                    file.Seek(-recordLenght, SeekOrigin.Current);
+                    writer.Write(line);
                 }
             }
-            File.Delete(filePath);
-            File.Move("tlist.csv", filePath);
-            File.Delete("tlist.csv");
+            reader.Close();
+            writer.Close();
+            file.Close();
+        }
+        public product ProductSplitter(string s)
+        {
+            product prod;
+            string[] dati = s.Split(';');
+            prod.name = dati[0];
+            prod.price = float.Parse(dati[1]);
+            prod.number = int.Parse(dati[2]);
+            prod.cancelled = int.Parse(dati[3]);
+            return prod;
         }
         #endregion
     }

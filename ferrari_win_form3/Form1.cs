@@ -54,7 +54,7 @@ namespace ferrari_win_form3
             }
             else
             {
-                MessageBox.Show($"Elemento trovato");
+                MessageBox.Show($"Elemento trovato in posizione {posizione}");
             }
             PulisciTextBox();
         }
@@ -184,8 +184,8 @@ namespace ferrari_win_form3
             var file = new FileStream(filePath, FileMode.Open, FileAccess.Write);
             BinaryWriter writer = new BinaryWriter(file);
             file.Seek(recordLenght * posizione, SeekOrigin.Begin);
-            line = $"{nome};{prezzo};{prod.number};0;".PadRight(recordLenght - 2) + "##";
-            byte[] bytes = Encoding.Unicode.GetBytes(line);
+            line = $"{nome};{prezzo};{prod.number};0;".PadRight(recordLenght);
+            byte[] bytes = Encoding.UTF8.GetBytes(line);
             writer.Write(bytes);
             writer.Close();
             file.Close();
@@ -197,9 +197,9 @@ namespace ferrari_win_form3
             var file = new FileStream(filePath, FileMode.Open, FileAccess.Write);
             BinaryWriter writer = new BinaryWriter(file);
             file.Seek(recordLenght * posizione, SeekOrigin.Begin);
-            line = $"{prod.name};{prod.price};{prod.number};1;".PadRight(recordLenght - 2) + "##";
-            byte[] bytes = Encoding.Unicode.GetBytes(line);
-            writer.Write(bytes);
+            line = $"{prod.name};{prod.price};{prod.number};1;".PadRight(recordLenght);
+            byte[] bytes = Encoding.UTF8.GetBytes(line);
+            writer.Write(bytes, 0, bytes.Length);
             writer.Close();
             file.Close();
         }
@@ -210,8 +210,8 @@ namespace ferrari_win_form3
             var file = new FileStream(filePath, FileMode.Open, FileAccess.Write);
             BinaryWriter writer = new BinaryWriter(file);
             file.Seek(recordLenght*posizione, SeekOrigin.Begin);
-            line = $"{prod.name};{prod.price};{prod.number + 1};0;".PadRight(recordLenght - 2) + "##";
-            byte[] bytes = Encoding.Unicode.GetBytes(line);
+            line = $"{prod.name};{prod.price};{prod.number + 1};0;".PadRight(recordLenght);
+            byte[] bytes = Encoding.UTF8.GetBytes(line);
             writer.Write(bytes);
             writer.Close();
             file.Close();
@@ -280,8 +280,8 @@ namespace ferrari_win_form3
             var file = new FileStream(filePath, FileMode.Open, FileAccess.Write);
             BinaryWriter writer = new BinaryWriter(file);
             file.Seek(recordLenght * posizione, SeekOrigin.Begin);
-            line = $"{prod.name};{prod.price};{prod.number};0;".PadRight(recordLenght - 2) + "##";
-            byte[] bytes = Encoding.Unicode.GetBytes(line);
+            line = $"{prod.name};{prod.price};{prod.number};0;".PadRight(recordLenght);
+            byte[] bytes = Encoding.UTF8.GetBytes(line);
             writer.Write(bytes);
             writer.Close();
             file.Close();
@@ -289,7 +289,6 @@ namespace ferrari_win_form3
         public product ProductSplitter(string s)
         {
             product prod;
-            MessageBox.Show(s);
             string[] dati = s.Split(';');
             prod.name = dati[0];
             prod.price = float.Parse(dati[1]);

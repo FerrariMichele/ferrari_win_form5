@@ -1,12 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ferrari_win_form3
@@ -28,7 +22,7 @@ namespace ferrari_win_form3
         public Form1()
         {
             InitializeComponent();
-            path = @"dati.txt";
+            path = @"dati.csv";
             if (!File.Exists(path)) 
             { 
                 File.Create(path);
@@ -38,14 +32,14 @@ namespace ferrari_win_form3
         }
         private void buttonAdd_Click(object sender, EventArgs e)
         {
-            string ser = Ricerca(textBoxNome.Text, path);
-            if (ser == "")
+            int posizione = Ricerca(textBoxNome.Text, path);
+            if (posizione == -1)
             {
                 Aggiunta(textBoxNome.Text, float.Parse(textBoxPrezzo.Text), path);
             }
             else
             {
-                AumentaNumero(ser, path, recordLenght);
+                AumentaNumero(posizione, path, recordLenght);
             }
             listView1.Clear();
             Visualizza(path);
@@ -53,8 +47,8 @@ namespace ferrari_win_form3
         }
         private void buttonFind_Click(object sender, EventArgs e)
         {
-            string ser = Ricerca(textBoxNome.Text, path);
-            if (ser == "")
+            int posizione = Ricerca(textBoxNome.Text, path);
+            if (posizione == -1)
             {
                 MessageBox.Show("Elemento non presente!");
             }
@@ -66,14 +60,14 @@ namespace ferrari_win_form3
         }
         private void buttonMod_Click(object sender, EventArgs e)
         {
-            string ser = Ricerca(textBoxNome.Text, path);
-            if (ser == "")
+            int posizione = Ricerca(textBoxNome.Text, path);
+            if (posizione == -1)
             {
                 MessageBox.Show("Elemento non presente!");
             }
             else
             {
-                //Modifica(pos, textBoxNewName.Text, float.Parse(textBoxNewPrice.Text), path);
+                Modifica(posizione, textBoxNewName.Text, float.Parse(textBoxNewPrice.Text), path, recordLenght);
             }
             listView1.Clear();
             Visualizza(path);
@@ -81,14 +75,14 @@ namespace ferrari_win_form3
         }
         private void buttonDel_Click(object sender, EventArgs e)
         {
-            string ser = Ricerca(textBoxNome.Text, path);
-            if (ser == "")
+            int posizione = Ricerca(textBoxNome.Text, path);
+            if (posizione == -1)
             {
                 MessageBox.Show("Elemento non presente!");
             }
             else
             {
-                Cancellazione(ser, path, recordLenght);
+                Cancellazione(posizione, path, recordLenght);
             }
             listView1.Clear();
             Visualizza(path);
@@ -105,14 +99,14 @@ namespace ferrari_win_form3
         }
         private void buttonRec_Click(object sender, EventArgs e)
         {
-            string ser = RicercaR(textBoxNome.Text, path);
-            if (ser == "")
+            int posizione = RicercaR(textBoxNome.Text, path);
+            if (posizione == -1)
             {
                 MessageBox.Show("Elemento non presente!");
             }
             else
             {
-                Recupero(ser, path, recordLenght);
+                Recupero(posizione, path, recordLenght);
             }
             listView1.Clear();
             Visualizza(path);
@@ -128,11 +122,12 @@ namespace ferrari_win_form3
         {
             var oStream = new FileStream(filePath, FileMode.Append, FileAccess.Write, FileShare.Read);
             StreamWriter sw = new StreamWriter(oStream);
-            sw.WriteLine($"{nome};{prezzo.ToString("0.00")};1;0;".PadRight(recordLenght - 4) + "##");
+            sw.WriteLine($"{nome};{prezzo};1;0;".PadRight(recordLenght - 2) + "##");
             sw.Close();
         }
-        public string Ricerca(string nome, string filePath)
+        public int Ricerca(string nome, string filePath)
         {
+            int riga = 0;
             using (StreamReader sr = File.OpenText(filePath))
             {
                 string s;
@@ -142,15 +137,17 @@ namespace ferrari_win_form3
                     if(dati[3] == "0" && dati[0] == nome)
                     {
                         sr.Close();
-                        return s;
+                        return riga;
                     }
+                    riga++;
                 }
                 sr.Close();
             }
-            return "";
+            return -1;
         }
-        public string RicercaR(string nome, string filePath)
+        public int RicercaR(string nome, string filePath)
         {
+            int riga = 0;
             using (StreamReader sr = File.OpenText(filePath))
             {
                 string s;
@@ -160,85 +157,59 @@ namespace ferrari_win_form3
                     if (dati[0] == nome)
                     {
                         sr.Close();
-                        return s;
+                        return riga;
                     }
+                    riga++;
                 }
                 sr.Close();
             }
-            return "";
+            return -1;
         }
-        public void Modifica(string ricerca, string nome, float prezzo, string filePath, int recordLenght)
+        public product RicercaProdotto(int posizione, string filePath, int recordLenght)
         {
-            product prod, ser;
-            ser = ProductSplitter(ricerca);
-            string line;
-            var file = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite);
+            product p;
+            var file = new FileStream(filePath, FileMode.Open, FileAccess.Read);
             BinaryReader reader = new BinaryReader(file);
-            BinaryWriter writer = new BinaryWriter(file);
-            file.Seek(0, SeekOrigin.Begin);
-            while (file.Position < file.Length)
-            {
-                byte[] br = reader.ReadBytes(recordLenght);
-                line = Encoding.ASCII.GetString(br, 0, br.Length);
-                prod = ProductSplitter(line);
-                if (prod.name == ser.name)
-                {
-                    line = $"{nome};{prezzo};{prod.number};0;".PadRight(recordLenght - 4) + "##";
-                    file.Seek(-recordLenght, SeekOrigin.Current);
-                    writer.Write(line);
-                }
-            }
+            file.Seek(recordLenght * posizione, SeekOrigin.Begin);
+            byte[] br = reader.ReadBytes(recordLenght);
+            string line = Encoding.ASCII.GetString(br, 0, br.Length);
+            p = ProductSplitter(line);
             reader.Close();
+            return p;
+        }
+        public void Modifica(int posizione, string nome, float prezzo, string filePath, int recordLenght)
+        {
+            product prod = RicercaProdotto(posizione, filePath, recordLenght);
+            string line;
+            var file = new FileStream(filePath, FileMode.Open, FileAccess.Write);
+            BinaryWriter writer = new BinaryWriter(file);
+            file.Seek(recordLenght * posizione, SeekOrigin.Begin);
+            line = $"{nome};{prezzo};{prod.number};0;".PadRight(recordLenght - 2) + "##";
+            writer.Write(line);
             writer.Close();
             file.Close();
         }
-        public void Cancellazione(string ricerca, string filePath, int recordLenght)
+        public void Cancellazione(int posizione, string filePath, int recordLenght)
         {
-            product prod, ser;
-            ser = ProductSplitter(ricerca);
+            product prod = RicercaProdotto(posizione, filePath, recordLenght);
             string line;
-            var file = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite);
-            BinaryReader reader = new BinaryReader(file);
+            var file = new FileStream(filePath, FileMode.Open, FileAccess.Write);
             BinaryWriter writer = new BinaryWriter(file);
-            file.Seek(0, SeekOrigin.Begin);
-            while (file.Position < file.Length)
-            {
-                byte[] br = reader.ReadBytes(recordLenght);
-                line = Encoding.ASCII.GetString(br, 0, br.Length);
-                prod = ProductSplitter(line);
-                if (prod.name == ser.name)
-                {
-                    line = $"{prod.name};{prod.price};{prod.number};1;".PadRight(recordLenght - 4) + "##";
-                    file.Seek(-recordLenght, SeekOrigin.Current);
-                    writer.Write(line);
-                }
-            }
-            reader.Close();
+            file.Seek(recordLenght * posizione, SeekOrigin.Begin);
+            line = $"{prod.name};{prod.price};{prod.number};1;".PadRight(recordLenght - 2) + "##";
+            writer.Write(line);
             writer.Close();
             file.Close();
         }
-        public void AumentaNumero(string ricerca, string filePath, int recordLenght)
+        public void AumentaNumero(int posizione, string filePath, int recordLenght)
         {
-            product prod, ser;
-            ser = ProductSplitter(ricerca);
+            product prod = RicercaProdotto(posizione, filePath, recordLenght);
             string line;
-            var file = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite);
-            BinaryReader reader = new BinaryReader(file);
+            var file = new FileStream(filePath, FileMode.Open, FileAccess.Write);
             BinaryWriter writer = new BinaryWriter(file);
-            file.Seek(0, SeekOrigin.Begin);
-            while (file.Position < file.Length)
-            {
-                byte[] br = reader.ReadBytes(recordLenght);
-                line = Encoding.ASCII.GetString(br, 0, br.Length);
-                prod = ProductSplitter(line);
-                if (prod.name == ser.name)
-                {
-                    line = $"{prod.name};{prod.price};{prod.number + 1};0;".PadRight(recordLenght - 4) + "##";
-                    file.Seek(-recordLenght, SeekOrigin.Current);
-                    writer.Write(line);
-                }
-            }
-            reader.Close();
+            file.Seek(recordLenght*posizione, SeekOrigin.Begin);
+            line = $"{prod.name};{prod.price};{prod.number + 1};0;".PadRight(recordLenght - 2) + "##";
+            writer.Write(line);
             writer.Close();
             file.Close();
         }
@@ -257,9 +228,10 @@ namespace ferrari_win_form3
                     string[] dati = s.Split(';');
                     if (dati[3] == "0")
                     {
+                        float price = float.Parse(dati[1]);
                         ListViewItem newItem = new ListViewItem();
                         newItem.Text = dati[0];
-                        newItem.SubItems.Add(dati[1]);
+                        newItem.SubItems.Add(price.ToString("0.00") + "€");
                         newItem.SubItems.Add(dati[2]);
                         listView1.Items.Add(newItem);
                     }
@@ -286,7 +258,7 @@ namespace ferrari_win_form3
                         string[] dati = s.Split(';');
                         if (dati[3] == "0")
                         {
-                                sw.WriteLine(s);
+                            sw.WriteLine(s);
                         }
                     }
                     sw.Close();
@@ -297,34 +269,22 @@ namespace ferrari_win_form3
             File.Move("tlist.csv", filePath);
             File.Delete("tlist.csv");
         }
-        public void Recupero(string ricerca, string filePath, int recordLenght)
+        public void Recupero(int posizione, string filePath, int recordLenght)
         {
-            product prod, ser;
-            ser = ProductSplitter(ricerca);
+            product prod = RicercaProdotto(posizione, filePath, recordLenght);
             string line;
-            var file = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite);
-            BinaryReader reader = new BinaryReader(file);
+            var file = new FileStream(filePath, FileMode.Open, FileAccess.Write);
             BinaryWriter writer = new BinaryWriter(file);
-            file.Seek(0, SeekOrigin.Begin);
-            while (file.Position < file.Length)
-            {
-                byte[] br = reader.ReadBytes(recordLenght);
-                line = Encoding.ASCII.GetString(br, 0, br.Length);
-                prod = ProductSplitter(line);
-                if (prod.name == ser.name)
-                {
-                    line = $"{prod.name};{prod.price};{prod.number};0;".PadRight(recordLenght - 4) + "##";
-                    file.Seek(-recordLenght, SeekOrigin.Current);
-                    writer.Write(line);
-                }
-            }
-            reader.Close();
+            file.Seek(recordLenght * posizione, SeekOrigin.Begin);
+            line = $"{prod.name};{prod.price};{prod.number};0;".PadRight(recordLenght - 2) + "##";
+            writer.Write(line);
             writer.Close();
             file.Close();
         }
         public product ProductSplitter(string s)
         {
             product prod;
+            MessageBox.Show(s);
             string[] dati = s.Split(';');
             prod.name = dati[0];
             prod.price = float.Parse(dati[1]);

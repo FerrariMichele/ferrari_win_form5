@@ -185,7 +185,8 @@ namespace ferrari_win_form3
             BinaryWriter writer = new BinaryWriter(file);
             file.Seek(recordLenght * posizione, SeekOrigin.Begin);
             line = $"{nome};{prezzo};{prod.number};0;".PadRight(recordLenght - 2) + "##";
-            writer.Write(line);
+            byte[] bytes = Encoding.Unicode.GetBytes(line);
+            writer.Write(bytes);
             writer.Close();
             file.Close();
         }
@@ -197,7 +198,8 @@ namespace ferrari_win_form3
             BinaryWriter writer = new BinaryWriter(file);
             file.Seek(recordLenght * posizione, SeekOrigin.Begin);
             line = $"{prod.name};{prod.price};{prod.number};1;".PadRight(recordLenght - 2) + "##";
-            writer.Write(line);
+            byte[] bytes = Encoding.Unicode.GetBytes(line);
+            writer.Write(bytes);
             writer.Close();
             file.Close();
         }
@@ -209,7 +211,8 @@ namespace ferrari_win_form3
             BinaryWriter writer = new BinaryWriter(file);
             file.Seek(recordLenght*posizione, SeekOrigin.Begin);
             line = $"{prod.name};{prod.price};{prod.number + 1};0;".PadRight(recordLenght - 2) + "##";
-            writer.Write(line);
+            byte[] bytes = Encoding.Unicode.GetBytes(line);
+            writer.Write(bytes);
             writer.Close();
             file.Close();
         }
@@ -223,8 +226,9 @@ namespace ferrari_win_form3
                 listView1.Columns.Add("Prezzo", 108, HorizontalAlignment.Left);
                 listView1.Columns.Add("Quantità", 104, HorizontalAlignment.Left);
                 listView1.GridLines = true;
-                while ((s = sr.ReadLine()) != null)
+                while (!sr.EndOfStream)
                 {
+                    s = sr.ReadLine();
                     string[] dati = s.Split(';');
                     if (dati[3] == "0")
                     {
@@ -277,7 +281,8 @@ namespace ferrari_win_form3
             BinaryWriter writer = new BinaryWriter(file);
             file.Seek(recordLenght * posizione, SeekOrigin.Begin);
             line = $"{prod.name};{prod.price};{prod.number};0;".PadRight(recordLenght - 2) + "##";
-            writer.Write(line);
+            byte[] bytes = Encoding.Unicode.GetBytes(line);
+            writer.Write(bytes);
             writer.Close();
             file.Close();
         }

@@ -34,7 +34,7 @@ namespace ferrari_win_form3
         {
             float prezzo;
             bool success = float.TryParse(textBoxPrezzo.Text, out prezzo);
-            if (success)
+            if (success && textBoxNome.Text.Length + textBoxPrezzo.Text.Length < 45)
             {
                 int posizione = Ricerca(textBoxNome.Text, path);
                 if (posizione == -1)
@@ -71,7 +71,7 @@ namespace ferrari_win_form3
         {
             float prezzo;
             bool success = float.TryParse(textBoxNewPrice.Text, out prezzo);
-            if (success)
+            if (success && textBoxNewName.Text.Length + textBoxNewPrice.Text.Length < 45)
             {
                 int posizione = Ricerca(textBoxNome.Text, path);
                 if (posizione == -1)

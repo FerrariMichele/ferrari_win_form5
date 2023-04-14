@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Text;
 using System.Windows.Forms;
@@ -23,8 +23,8 @@ namespace ferrari_win_form3
         {
             InitializeComponent();
             path = @"dati.csv";
-            if (!File.Exists(path)) 
-            { 
+            if (!File.Exists(path))
+            {
                 File.Create(path);
             }
             Visualizza(path);
@@ -118,11 +118,11 @@ namespace ferrari_win_form3
         }
         #endregion
         #region funzioni di servizio
-        public void Aggiunta(string nome, float prezzo, string filePath) 
+        public void Aggiunta(string nome, float prezzo, string filePath)
         {
             var oStream = new FileStream(filePath, FileMode.Append, FileAccess.Write, FileShare.Read);
             StreamWriter sw = new StreamWriter(oStream);
-            sw.WriteLine($"{nome};{prezzo};1;0;".PadRight(recordLenght - 2) + "##");
+            sw.WriteLine($"{nome};{prezzo};1;0;".PadRight(recordLenght - 4) + "##");
             sw.Close();
         }
         public int Ricerca(string nome, string filePath)
@@ -134,7 +134,7 @@ namespace ferrari_win_form3
                 while ((s = sr.ReadLine()) != null)
                 {
                     string[] dati = s.Split(';');
-                    if(dati[3] == "0" && dati[0] == nome)
+                    if (dati[3] == "0" && dati[0] == nome)
                     {
                         sr.Close();
                         return riga;
@@ -173,6 +173,7 @@ namespace ferrari_win_form3
             file.Seek(recordLenght * posizione, SeekOrigin.Begin);
             byte[] br = reader.ReadBytes(recordLenght);
             string line = Encoding.ASCII.GetString(br, 0, br.Length);
+            MessageBox.Show(line);
             p = ProductSplitter(line);
             reader.Close();
             return p;
@@ -184,7 +185,7 @@ namespace ferrari_win_form3
             var file = new FileStream(filePath, FileMode.Open, FileAccess.Write);
             BinaryWriter writer = new BinaryWriter(file);
             file.Seek(recordLenght * posizione, SeekOrigin.Begin);
-            line = $"{nome};{prezzo};{prod.number};0;".PadRight(recordLenght);
+            line = $"{nome};{prezzo};{prod.number};0;".PadRight(recordLenght - 4) + "##";
             byte[] bytes = Encoding.UTF8.GetBytes(line);
             writer.Write(bytes);
             writer.Close();
@@ -197,7 +198,7 @@ namespace ferrari_win_form3
             var file = new FileStream(filePath, FileMode.Open, FileAccess.Write);
             BinaryWriter writer = new BinaryWriter(file);
             file.Seek(recordLenght * posizione, SeekOrigin.Begin);
-            line = $"{prod.name};{prod.price};{prod.number};1;".PadRight(recordLenght);
+            line = $"{prod.name};{prod.price};{prod.number};1;".PadRight(recordLenght - 4) + "##";
             byte[] bytes = Encoding.UTF8.GetBytes(line);
             writer.Write(bytes, 0, bytes.Length);
             writer.Close();
@@ -209,14 +210,14 @@ namespace ferrari_win_form3
             string line;
             var file = new FileStream(filePath, FileMode.Open, FileAccess.Write);
             BinaryWriter writer = new BinaryWriter(file);
-            file.Seek(recordLenght*posizione, SeekOrigin.Begin);
-            line = $"{prod.name};{prod.price};{prod.number + 1};0;".PadRight(recordLenght);
+            file.Seek(recordLenght * posizione, SeekOrigin.Begin);
+            line = $"{prod.name};{prod.price};{prod.number + 1};0;".PadRight(recordLenght - 4) + "##";
             byte[] bytes = Encoding.UTF8.GetBytes(line);
             writer.Write(bytes);
             writer.Close();
             file.Close();
         }
-        public void Visualizza(string filePath) 
+        public void Visualizza(string filePath)
         {
             using (StreamReader sr = File.OpenText(filePath))
             {
@@ -250,7 +251,7 @@ namespace ferrari_win_form3
             textBoxNewName.Text = string.Empty;
             textBoxNewPrice.Text = string.Empty;
         }
-        public void Ricompattazione(string filePath) 
+        public void Ricompattazione(string filePath)
         {
             using (StreamReader sr = File.OpenText(filePath))
             {
@@ -280,7 +281,7 @@ namespace ferrari_win_form3
             var file = new FileStream(filePath, FileMode.Open, FileAccess.Write);
             BinaryWriter writer = new BinaryWriter(file);
             file.Seek(recordLenght * posizione, SeekOrigin.Begin);
-            line = $"{prod.name};{prod.price};{prod.number};0;".PadRight(recordLenght);
+            line = $"{prod.name};{prod.price};{prod.number};0;".PadRight(recordLenght - 4) + "##";
             byte[] bytes = Encoding.UTF8.GetBytes(line);
             writer.Write(bytes);
             writer.Close();

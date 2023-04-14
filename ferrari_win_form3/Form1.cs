@@ -32,14 +32,23 @@ namespace ferrari_win_form3
         }
         private void buttonAdd_Click(object sender, EventArgs e)
         {
-            int posizione = Ricerca(textBoxNome.Text, path);
-            if (posizione == -1)
+            float prezzo;
+            bool success = float.TryParse(textBoxPrezzo.Text, out prezzo);
+            if (success)
             {
-                Aggiunta(textBoxNome.Text, float.Parse(textBoxPrezzo.Text), path);
+                int posizione = Ricerca(textBoxNome.Text, path);
+                if (posizione == -1)
+                {
+                    Aggiunta(textBoxNome.Text, prezzo, path);
+                }
+                else
+                {
+                    AumentaNumero(posizione, path, recordLenght);
+                }
             }
             else
             {
-                AumentaNumero(posizione, path, recordLenght);
+                MessageBox.Show("Input non valido");
             }
             listView1.Clear();
             Visualizza(path);
@@ -54,24 +63,34 @@ namespace ferrari_win_form3
             }
             else
             {
-                MessageBox.Show($"Elemento trovato in posizione {posizione}");
+                MessageBox.Show($"Elemento presente in posizione {posizione}");
             }
             PulisciTextBox();
         }
         private void buttonMod_Click(object sender, EventArgs e)
         {
-            int posizione = Ricerca(textBoxNome.Text, path);
-            if (posizione == -1)
+            float prezzo;
+            bool success = float.TryParse(textBoxNewPrice.Text, out prezzo);
+            if (success)
             {
-                MessageBox.Show("Elemento non presente!");
+                int posizione = Ricerca(textBoxNome.Text, path);
+                if (posizione == -1)
+                {
+                    MessageBox.Show("Elemento non presente!");
+                }
+                else
+                {
+                    Modifica(posizione, textBoxNewName.Text, prezzo, path, recordLenght);
+                }
             }
             else
             {
-                Modifica(posizione, textBoxNewName.Text, float.Parse(textBoxNewPrice.Text), path, recordLenght);
+                MessageBox.Show("Input non valido");
             }
             listView1.Clear();
             Visualizza(path);
             PulisciTextBox();
+
         }
         private void buttonDel_Click(object sender, EventArgs e)
         {
@@ -173,7 +192,6 @@ namespace ferrari_win_form3
             file.Seek(recordLenght * posizione, SeekOrigin.Begin);
             byte[] br = reader.ReadBytes(recordLenght);
             string line = Encoding.ASCII.GetString(br, 0, br.Length);
-            MessageBox.Show(line);
             p = ProductSplitter(line);
             reader.Close();
             return p;
